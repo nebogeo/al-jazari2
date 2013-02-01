@@ -14,29 +14,6 @@
 (define (bot-modify-code b v) (list-replace b 3 v))
 (define (bot-modify-action b v) (list-replace b 4 v))
 
-(define (bot-test-code bot)
-  (let ((dir (vadd
-              (if (key-pressed "w") (vector 1 0 0) (vector 0 0 0))
-              (if (key-pressed "s") (vector -1 0 0) (vector 0 0 0))
-              (if (key-pressed "a") (vector 0 0 -1) (vector 0 0 0))
-              (if (key-pressed "d") (vector 0 0 1) (vector 0 0 0)))))
-    (bot-modify-pos 
-     (if (key-pressed "z") 
-         (bot-modify-action bot 'dig)
-         bot)
-     (vadd (bot-pos bot) dir)))
-  
-  #;(bot-modify-pos
-   bot
-   (vadd 
-    (list-ref
-     (list (vector 1 0 0)
-           (vector 0 0 1)
-           (vector -1 0 0)
-           (vector 0 0 -1))
-     (modulo (bot-clock bot) 4))
-    (bot-pos bot))))
-
 (define (bot-run-code bot octree)
   (let ((bot (bot-modify-clock bot (+ 1 (bot-clock bot)))))
     ;; check gravity first
@@ -46,7 +23,7 @@
           (bot-modify-pos bot (vadd (vector 0 1 0) (bot-pos bot)))
           (if (eq? under 'e) ;; nothing underneath, go down
               (bot-modify-pos bot (vadd (vector 0 -1 0) (bot-pos bot)))
-              (bot-test-code bot)))))) ;; todo: run code
+              ((bot-code bot) bot)))))) ;; run code
 
 (define (bot-run-action bot octree)
   (if (eq? (bot-action bot) 'dig)

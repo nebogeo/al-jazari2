@@ -24,7 +24,20 @@
 
 (define bots (make-bots 
               (list 
-               (make-bot 0 (vector 20 26 20) '()))))
+               (make-bot 
+                0 (vector 20 26 20) 
+                (lambda (bot)
+                  (let ((dir (vadd
+                              (if (key-pressed "w") (vector 0 0 -1) (vector 0 0 0))
+                              (if (key-pressed "s") (vector 0 0 1) (vector 0 0 0))
+                              (if (key-pressed "a") (vector -1 0 0) (vector 0 0 0))
+                              (if (key-pressed "d") (vector 1 0 0) (vector 0 0 0)))))
+                    (bot-modify-pos 
+                     (if (key-pressed "z") 
+                         (bot-modify-action bot 'dig)
+                         bot)
+                     (vadd (bot-pos bot) dir)))))
+               (make-bot 1 (vector 22 26 20) (lambda (bot) bot)))))
 
 (define bot-views (make-bot-views '()))
 
@@ -41,7 +54,7 @@
     (make-bricks) 
     '(hello (there)(1 2 3)))))
 
-(set-camera-transform (mtranslate (vector 0 0 -10)))
+(set-camera-transform (mtranslate (vector 0 -3 -10)))
 
 (define (update)
   (let ((tx (with-primitive camera (get-transform))))
