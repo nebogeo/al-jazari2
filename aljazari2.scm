@@ -27,19 +27,21 @@
 
 (define bot-views (make-bot-views '()))
 
-
 (set! bot-views (bot-views-update bot-views bots))
 (lock-camera (bot-view-prim (car bot-views)))
 
-(every-frame (begin
-               (when (key-pressed "o")
-                     (set! octree 
-                           (octree-compress octree))
-                     (set! block-view 
-                           (block-view-update 
-                            block-view octree)))
+(define (update)
+  (set! bots (bots-run-code bots octree))
+  (set! octree (bots-run-actions bots octree))
+  
+  (when (bots-octree-change? bots)
+        (set! octree 
+              (octree-compress octree))
+        (set! block-view 
+              (block-view-update 
+               block-view octree)))
+  
+  (set! bots (bots-clear-actions bots))
+  (set! bot-views (bot-views-update bot-views bots)))
 
-               (set! bots (bots-run-code bots octree))
-               (set! octree (bots-run-actions bots octree))
-               (set! bots (bots-clear-actions bots))
-               (set! bot-views (bot-views-update bot-views bots))))
+(every-frame (update))

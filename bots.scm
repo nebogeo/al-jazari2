@@ -77,6 +77,14 @@
     octree
     (bots-list bs)))
 
+(define (bots-octree-change? bs)
+  (foldl
+   (lambda (bot r)
+     (if (and (not r) (eq? (bot-action bot) 'dig))
+         #t r))
+   #f
+   (bots-list bs)))
+
 (define (bots-clear-actions bs)
   (bots-modify-list
    bs
