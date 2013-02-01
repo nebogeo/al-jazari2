@@ -2,6 +2,7 @@
 
 (load "botview.scm")
 (load "blockview.scm")
+(load "scheme-bricks.scm")
 
 (define octree
   (octree-compress
@@ -28,20 +29,35 @@
 (define bot-views (make-bot-views '()))
 
 (set! bot-views (bot-views-update bot-views bots))
-(lock-camera (bot-view-prim (car bot-views)))
+
+(define camera (bot-view-prim (car bot-views)))
+(lock-camera camera)
+
+(define bricks
+  (with-state
+  (parent camera)
+  ;; (translate (vector 0 5 0))
+   (bricks-add-code
+    (make-bricks) 
+    '(hello (there)(1 2 3)))))
+
+(set-camera-transform (mtranslate (vector 0 0 -10)))
 
 (define (update)
-  (set! bots (bots-run-code bots octree))
-  (set! octree (bots-run-actions bots octree))
-  
-  (when (bots-octree-change? bots)
-        (set! octree 
-              (octree-compress octree))
-        (set! block-view 
-              (block-view-update 
-               block-view octree)))
-  
-  (set! bots (bots-clear-actions bots))
-  (set! bot-views (bot-views-update bot-views bots)))
+  (let ((tx (with-primitive camera (get-transform))))
+
+    (set! bots (bots-run-code bots octree))
+    (set! octree (bots-run-actions bots octree))
+
+    (when (bots-octree-change? bots)
+          (set! octree 
+                (octree-compress octree))
+          (set! block-view 
+                (block-view-update 
+                 block-view octree)))
+
+    (set! bots (bots-clear-actions bots))
+    (set! bot-views (bot-views-update bot-views bots))
+    (set! bricks (bricks-update! bricks tx))))
 
 (every-frame (update))
