@@ -5,7 +5,7 @@
 ;   (hint-wire)
 ;   (wire-colour 0)
 
-;   (hint-cast-shadow)
+   (hint-cast-shadow)
 
    (texture (load-texture (string-append "textures/" (number->string value) ".png")))
 

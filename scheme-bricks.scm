@@ -5,21 +5,6 @@
 ;; * rotate/hide block
 ;; * click undock bug 
 
-
-;; * auto record edits
-;; * load/save code
-;; * copy/paste
-;; * drag resized distance
-;; * resize block
-;; * execute flash block
-;; * play flash insertion
-;; * middle click code select
-;; * palette move with mouse wheel
-;; * lock pallete items from drag/drop (lock all recusively?)
-;; * drop messed up from bottom
-;; * right click text edit
-
-
 (require mzlib/string)
 
 ;(require fluxus-018/fluxa)
@@ -160,7 +145,7 @@
         (hint-unlit)
         (hint-depth-sort)
         (texture-params 0 (list 'min 'linear 'mag 'linear))
-        (texture (load-texture "oolite-font.png"
+        (texture (load-texture "textures/oolite-font.png"
                                (list 'generate-mipmaps 0 'mip-level 0)))
         (for-each
          (lambda (line)
@@ -181,8 +166,13 @@
 
 (define (make-brick text children)
   (let* ((atom (not children))
-         (prim (build-polygons (if atom 4 8) 'triangle-strip))
-         (depth-shape-prim (build-polygons (if atom 16 32) 'quad-list))
+         (prim (with-state 
+                (hint-unlit)
+                (hint-cast-shadow)
+                (build-polygons (if atom 4 8) 'triangle-strip)))
+         (depth-shape-prim (with-state
+                            (hint-cast-shadow)
+                            (build-polygons (if atom 16 32) 'quad-list)))
          (text-prim  (with-state
                       (parent prim)
                       (translate (vector -0.9 1.1 0.0001))
@@ -190,7 +180,7 @@
                       (hint-depth-sort)
                       (colour 0)
                       (texture-params 0 (list 'min 'linear 'mag 'linear))
-                      (texture (load-texture "oolite-font.png"
+                      (texture (load-texture "textures/oolite-font.png"
                                              (list 'generate-mipmaps 0 'mip-level 0)))
                       (let ((text-prim (build-text text)))
                         (with-primitive 
@@ -450,7 +440,7 @@
   (with-primitive 
    (brick-id b)
    (opacity 1)
-   (hint-none)(hint-solid))
+   (hint-none)(hint-solid)(hint-unlit))
   (with-primitive 
    (brick-depth b)
    (opacity 1)
@@ -613,11 +603,17 @@
             (insert-to new (ghost-pos (brick-ghost b)) children))
           (brick-clear-ghost b)))))
 
-(define (brick-undock b id)
+(define (brick-undock b id canvas-root)
   (cond ((or (brick-locked b)
              (brick-parent-locked b)) b)
         (else
-         (with-primitive id (detach-parent))
+         (with-primitive 
+          id 
+;          (detach-parent)
+          (let ((m (get-global-transform)))
+            (identity)
+            (parent canvas-root)
+            (concat (mmul (minverse m) (get-global-transform))))) 
          (brick-modify-children
           (lambda (children)
             (filter
@@ -633,10 +629,10 @@
    (set-text (brick-text b)))
   (with-primitive 
    (brick-id b)
-   (colour (vector 1 (/ (modulo d 6) 6) (/ (modulo d 4) 4))))
+   (colour (vector (/ (modulo d 6) 6) (/ (modulo d 4) 4) 1)))
   (with-primitive 
    (brick-depth b)
-   (colour (vector 1 (/ (modulo d 6) 6) (/ (modulo d 4) 4))))
+   (colour (vector (/ (modulo d 6) 6) (/ (modulo d 4) 4) 1)))
   (when (not (brick-is-atom? b))
         (let ((size
                (car 
@@ -715,8 +711,8 @@
 
 ;---------------------------------------------------------  
 
-(define (make-bricks)
-  (list '() (vector 0 0 0) #f #f #f #f #f '() #f 0))
+(define (make-bricks root)
+  (list '() (vector 0 0 0) #f #f #f #f #f '() #f 0 root))
 
 (define (bricks-roots b) (list-ref b 0))
 (define (bricks-modify-roots f b) (list-replace b 0 (f (bricks-roots b))))
@@ -738,6 +734,7 @@
 (define (bricks-modify-code-current f b) (list-replace b 8 (f (bricks-code-current b))))
 (define (bricks-history b) (list-ref b 9))
 (define (bricks-modify-history f b) (list-replace b 9 (f (bricks-history b))))
+(define (bricks-root b) (list-ref b 10))
 
 (define (bricks-save b fn)
   (let ((f (open-output-file fn #:exists 'replace)))
@@ -817,7 +814,7 @@
          (new-b (if parent 
                     (bricks-modify-brick 
                      (lambda (parent)
-                       (brick-undock parent id))
+                       (brick-undock parent id (bricks-root b)))
                      b (brick-id parent))
                     (bricks-modify-roots
                      (lambda (roots)
@@ -1202,7 +1199,7 @@
                  ;; undock from parent
                  (bricks-modify-brick 
                   (lambda (parent)
-                    (brick-undock parent id))
+                    (brick-undock parent id (bricks-root b)))
                   new-b
                   (brick-id prnt))
                  (bricks-current new-b)))

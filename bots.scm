@@ -16,7 +16,7 @@
 (define (bot-modify-code b v) (list-replace b 4 v))
 (define (bot-modify-action b v) (list-replace b 5 v))
 
-(define (bot-run-code bot octree)
+(define (bot-run-code bot octree input)
   (let ((bot (bot-modify-clock bot (+ 1 (bot-clock bot)))))
     ;; check gravity first
     (let ((here (octree-ref octree (bot-pos bot)))
@@ -25,12 +25,33 @@
           (bot-modify-pos bot (vadd (vector 0 1 0) (bot-pos bot)))
           (if (eq? under 'e) ;; nothing underneath, go down
               (bot-modify-pos bot (vadd (vector 0 -1 0) (bot-pos bot)))
-              ((bot-code bot) bot)))))) ;; run code
+              ((bot-code bot) bot input)))))) ;; run code
+
+(define (bot-in-front bot)
+  (let ((d (modulo (bot-dir bot) 4)))
+    (vadd
+     (bot-pos bot)
+     (if (eq? d 0) (vector 0 0 -1) (vector 0 0 0))
+     (if (eq? d 1) (vector -1 0 0) (vector 0 0 0))
+     (if (eq? d 2) (vector 0 0 1) (vector 0 0 0))
+     (if (eq? d 3) (vector 1 0 0) (vector 0 0 0)))))
+
+(define (bot-behind bot)
+  (let ((d (modulo (bot-dir bot) 4)))
+    (vadd
+     (bot-pos bot)
+     (if (eq? d 0) (vector 0 0 1) (vector 0 0 0))
+     (if (eq? d 1) (vector 1 0 0) (vector 0 0 0))
+     (if (eq? d 2) (vector 0 0 -1) (vector 0 0 0))
+     (if (eq? d 3) (vector -1 0 0) (vector 0 0 0)))))
 
 (define (bot-run-action bot octree)
-  (if (eq? (bot-action bot) 'dig)
-      (octree-delete octree (vadd (vector 0 -1 0) (bot-pos bot)))
-      octree))
+  (cond 
+   ((eq? (bot-action bot) 'dig)
+    (octree-delete octree (vadd (vector 0 -1 0) (bot-pos bot))))
+   ((eq? (bot-action bot) 'remove)
+    (octree-delete octree (bot-in-front bot)))
+   (else octree)))
   
 (define (make-bots l) (list l))
 (define (bots-list bs) (list-ref bs 0)) 
@@ -41,12 +62,12 @@
    bs 
    (cons bot (bots-list bs))))
 
-(define (bots-run-code bs octree)
+(define (bots-run-code bs octree input)
   (bots-modify-list
    bs
    (map
     (lambda (bot)
-      (bot-run-code bot octree))
+      (bot-run-code bot octree input))
     (bots-list bs))))
 
 (define (bots-run-actions bs octree)
@@ -59,7 +80,9 @@
 (define (bots-octree-change? bs)
   (foldl
    (lambda (bot r)
-     (if (and (not r) (eq? (bot-action bot) 'dig))
+     (if (and (not r) (or 
+                       (eq? (bot-action bot) 'dig)
+                       (eq? (bot-action bot) 'remove)))
          #t r))
    #f
    (bots-list bs)))

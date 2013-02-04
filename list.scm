@@ -4,3 +4,9 @@
     ((null? l) l)
     ((zero? i) (cons v (list-replace (cdr l) (- i 1) v)))
     (else (cons (car l) (list-replace (cdr l) (- i 1) v)))))
+
+(define (in-list? a l)
+  (cond 
+   ((null? l) #f)
+   ((eq? (car l) a) #t)
+   (else (in-list? a (cdr l)))))
