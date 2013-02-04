@@ -2,10 +2,14 @@
 
 (define (make-block pos size value)
   (with-state
-   (hint-wire)
-   (wire-colour 0)
+;   (hint-wire)
+;   (wire-colour 0)
 
-   (colour (cond 
+;   (hint-cast-shadow)
+
+   (texture (load-texture (string-append "textures/" (number->string value) ".png")))
+
+   #;(colour (cond 
             ((eq? value 0) (vector 1 0 0))
             ((eq? value 1) (vector 1 1 0))
             ((eq? value 2) (vector 1 0 1))))
@@ -13,7 +17,11 @@
    (translate pos)
    (scale size)
    (translate (vector 0.5 0.5 0.5))
-   (build-cube)))
+   (let ((p (build-cube)))
+     (with-primitive 
+      p
+      (pdata-map! (lambda (t) (vmul t size)) "t"))
+     p)))
 
 (define (block-view-builder o x y z depth)
   (let ((s (/ octree-size (expt 2 depth) 2)))

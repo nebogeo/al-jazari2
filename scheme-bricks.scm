@@ -1125,8 +1125,8 @@
                 (with-primitive  ;; it's a normal brick, scale
                  (brick-id root)
                  (let* ((t (get-transform))
-                        (d (vsub pos (vtransform (vector 0 0 0) (get-transform))))
-                        (d2 (vmul d (/ 1 (vector-ref (get-transform) 0)))))
+                        (d (vsub pos (vtransform (vector 0 0 0) (get-global-transform))))
+                        (d2 (vmul d (/ 1 (vector-ref (get-global-transform) 0)))))
                    (when (or (< (mouse-wheel) 0) (key-special-pressed 103))
                          (translate d2)
                          (scale (vector 0.9 0.9 0.9))
