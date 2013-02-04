@@ -5,8 +5,9 @@
 (load "input.scm")
 (load "scheme-bricks.scm")
 
+(define bot-cycle-time 0.5)
 
-(define (make-bot id pos brick-id) (list id pos 0 0 brick-id 'none))
+(define (make-bot id pos brick-id) (list id pos 0 0 brick-id 'none (+ (time) (random))))
 (define (bot-id b) (list-ref b 0))
 (define (bot-pos b) (list-ref b 1))
 (define (bot-dir b) (list-ref b 2))
@@ -17,20 +18,32 @@
 (define (bot-modify-dir b v) (list-replace b 2 v))
 (define (bot-modify-clock b v) (list-replace b 3 v))
 (define (bot-modify-action b v) (list-replace b 5 v))
+(define (bot-time b) (list-ref b 6))
+(define (bot-modify-time b v) (list-replace b 6 v))
 
 (define (bot-run-code bot octree input bricks)
-  (let ((bot (bot-modify-clock bot (+ 1 (bot-clock bot)))))
-    ;; check gravity first
-    (let ((here (octree-ref octree (bot-pos bot)))
-          (under (octree-ref octree (vadd (vector 0 -1 0) (bot-pos bot)))))
-      (if (not (eq? here 'e)) ;; 'in' a filled block, go up
-          (bot-modify-pos bot (vadd (vector 0 1 0) (bot-pos bot)))
-          (if (eq? under 'e) ;; nothing underneath, go down
-              (bot-modify-pos bot (vadd (vector 0 -1 0) (bot-pos bot)))
-              (apply 
-               (eval (brick->sexpr (bricks-search bricks (bot-brick-id bot))))
-               (list bot input))
-              #;((bot-code bot) bot input)))))) ;; run code
+  ;; check gravity first
+  (let ((here (octree-ref octree (bot-pos bot)))
+        (under (octree-ref octree (vadd (vector 0 -1 0) (bot-pos bot)))))
+    (if (not (eq? here 'e)) ;; 'in' a filled block, go up
+        (bot-modify-pos bot (vadd (vector 0 1 0) (bot-pos bot)))
+        (if (eq? under 'e) ;; nothing underneath, go down
+            (bot-modify-pos bot (vadd (vector 0 -1 0) (bot-pos bot)))
+            ;; if it't time
+            (if (< (bot-time bot) (time)) 
+                (bot-modify-clock 
+                 (bot-modify-time
+                  ;; run the code
+                  (with-handlers ([(lambda (x) #t) 
+                                   (lambda (n)
+                                     (broadcast 1 (exn-message n))
+                                     bot)])
+                                 (apply 
+                                  (eval (brick->sexpr (bricks-search bricks (bot-brick-id bot))))
+                                  (list bot input)))
+                  (+ (bot-time bot) bot-cycle-time))
+                 (+ 1 (bot-clock bot)))
+                bot)))))
 
 (define (bot-in-front bot)
   (let ((d (modulo (bot-dir bot) 4)))
@@ -50,25 +63,53 @@
      (if (eq? d 2) (vector 0 0 -1) (vector 0 0 0))
      (if (eq? d 3) (vector -1 0 0) (vector 0 0 0)))))
 
+(define (bot-turn-left bot)
+  (bot-modify-dir bot (- (bot-dir bot) 1)))
+
+(define (bot-turn-right bot)
+  (bot-modify-dir bot (+ (bot-dir bot) 1)))
+
+(define (bot-forward bot)
+  (bot-modify-pos bot (bot-in-front bot)))
+
+(define (bot-backward bot)
+  (bot-modify-pos bot (bot-behind bot)))
+
 (define (bot-do-movement bot input)
   (bot-modify-dir
    (bot-modify-pos 
     bot
-    (if (input-key? input "w")
+    (if (key-pressed "w")
         (bot-in-front bot)
-        (if (input-key? input "s")
+        (if (key-pressed "s")
             (bot-behind bot)
             (bot-pos bot))))
    (+ (bot-dir bot)
-      (if (input-key? input "a") 1 0)
-      (if (input-key? input "d") -1 0))))
+      (if (key-pressed "a") 1 0)
+      (if (key-pressed "d") -1 0))))
+
+(define (bot-sequence bot l)
+  (let ((step (modulo (bot-clock bot) (length l))))
+    (apply (list-ref l step) (list bot))))
+  
+(define walker-bot
+  '(lambda (bot input)
+     (bot-sequence 
+      bot
+      (list
+       bot-forward
+       bot-forward
+       bot-forward
+       bot-forward
+       bot-forward
+       bot-turn-left))))
 
 (define controlled-bot 
   '(lambda (bot input)
      (bot-do-movement
-      (if (input-key? input "z") 
+      (if (key-pressed "z") 
           (bot-modify-action bot 'dig)
-          (if (input-key? input "x") 
+          (if (key-pressed "x") 
               (bot-modify-action bot 'remove)
               bot))
       input)))

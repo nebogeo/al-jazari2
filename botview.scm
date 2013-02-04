@@ -18,7 +18,18 @@
 (define (lerp-angle a b t)
   (fmod (lerp a b t) 4))
 
-(define (bot-view-update bv bot)
+(define (bot-view-update bv bot bricks)
+  ;; update brick position
+  (with-primitive 
+   (bot-brick-id bot)
+   (identity)
+   (scale 0.15)
+   (translate 
+    (vector 
+     -3 
+     (+ 5 (brick-children-size (bricks-search bricks (bot-brick-id bot))) )
+     0)))
+
   (if (not (eq? (bot-view-t bv) 99))
       ;; are we moving?
       (if (< (bot-view-t bv) 1)
@@ -52,9 +63,6 @@
               (not (eq? (bot-view-old-dir bv) (bot-dir bot))))
           (bot-view-modify-t bv 0)
           bv)))
-
-(define (list-ref-safe l n)
-  (list-ref l (modulo n (length l))))
 
 (define (expand distance)
   (pdata-map!
@@ -119,11 +127,11 @@
 (define (bot-views-find bvs id)
   (assq id bvs))
 
-(define (bot-views-update bot-views bots)
+(define (bot-views-update bot-views bots bricks)
   ;; update them all
   (map
    (lambda (bot-view bot)
-     (bot-view-update bot-view bot))
+     (bot-view-update bot-view bot bricks))
    ;; add new bots
    (foldl
     (lambda (bot bot-views)

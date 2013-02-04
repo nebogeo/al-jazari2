@@ -10,3 +10,6 @@
    ((null? l) #f)
    ((eq? (car l) a) #t)
    (else (in-list? a (cdr l)))))
+
+(define (list-ref-safe l n)
+  (list-ref l (modulo n (length l))))

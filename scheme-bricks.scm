@@ -168,7 +168,9 @@
   (let* ((atom (not children))
          (prim (with-state 
                 (hint-unlit)
-                (hint-cast-shadow)
+                (build-polygons (if atom 4 8) 'triangle-strip)))
+         (back-prim (with-state 
+                (hint-unlit)
                 (build-polygons (if atom 4 8) 'triangle-strip)))
          (depth-shape-prim (with-state
                             (hint-cast-shadow)
@@ -211,6 +213,29 @@
   
     (let ((depth -3))
           
+      (with-primitive 
+       back-prim
+       (parent prim)
+       (cond 
+        (atom
+         (pdata-set! "p" 0 (vector 5 0 depth))
+         (pdata-set! "p" 1 (vector 5 1 depth))
+         (pdata-set! "p" 2 (vector -1 0 depth))
+         (pdata-set! "p" 3 (vector -1 1 depth)))
+        (else
+         (pdata-set! "p" 0 (vector 5 0 depth))
+         (pdata-set! "p" 1 (vector 5 1 depth))
+         (pdata-set! "p" 2 (vector 0 0 depth))
+         (pdata-set! "p" 3 (vector -1 1 depth))
+         (pdata-set! "p" 4 (vector 0 0 depth))
+         (pdata-set! "p" 5 (vector -1 -1 depth))
+         (pdata-set! "p" 6 (vector 5 0 depth))
+         (pdata-set! "p" 7 (vector 5 -1 depth))))
+       
+       (pdata-map! (lambda (n) (vector 0 0 -1)) "n")
+;       (apply-transform)
+       (backfacecull 0)
+       (pdata-copy "p" "pref"))
 
     (with-primitive 
    depth-shape-prim
@@ -331,7 +356,7 @@
    
    (pdata-copy "p" "pref")))
 
-  (list text children empty-ghost prim text-prim depth-shape-prim #f #f)))
+  (list text children empty-ghost prim text-prim depth-shape-prim back-prim #f #f)))
 
 (define (brick-text b) (list-ref b 0))
 (define (brick-modify-text f b) (list-replace b 0 (f (brick-text b))))
@@ -348,11 +373,12 @@
 (define (brick-id b) (list-ref b 3))
 (define (brick-text-prim b) (list-ref b 4))
 (define (brick-depth b) (list-ref b 5))
-(define (brick-locked b) (list-ref b 6)) ; for the palette
-(define (brick-modify-locked f b) (list-replace b 6 (f (brick-locked b))))
+(define (brick-back b) (list-ref b 6))
+(define (brick-locked b) (list-ref b 7)) ; for the palette
+(define (brick-modify-locked f b) (list-replace b 7 (f (brick-locked b))))
 ;; set manually when creating the palette
-(define (brick-parent-locked b) (list-ref b 7))
-(define (brick-modify-parent-locked f b) (list-replace b 7 (f (brick-parent-locked b))))
+(define (brick-parent-locked b) (list-ref b 8))
+(define (brick-modify-parent-locked f b) (list-replace b 8 (f (brick-parent-locked b))))
 
 (define (brick-for-each fn b)
   (fn b)
@@ -475,6 +501,10 @@
         (pdata-set! "p" i (vadd (pdata-ref "pref" i) (vector 0 (- n) 0)))))
   (with-primitive 
    (brick-depth b)
+   (for ((i (in-range 4 8)))
+        (pdata-set! "p" i (vadd (pdata-ref "pref" i) (vector 0 (- n) 0)))))
+  (with-primitive 
+   (brick-depth b)
    (for-each (lambda (i)
                (pdata-set! "p" i (vadd (pdata-ref "pref" i) (vector 0 (- n) 0))))
              (list 14 15))
@@ -562,7 +592,8 @@
   (if (brick-is-atom? b)
       (let ((txt (brick-text b)))
         (if (char=? (string-ref txt 0) #\")
-            (brick-text b)
+            (substring (brick-text b) 1 
+                     (- (string-length (brick-text b)) 1))
             (string->symbol (brick-text b))))
       (apply
        list
@@ -637,6 +668,9 @@
    (colour (vector (/ (modulo d 6) 6) (/ (modulo d 4) 4) 1)))
   (with-primitive 
    (brick-depth b)
+   (colour (vector (/ (modulo d 6) 6) (/ (modulo d 4) 4) 1)))
+  (with-primitive 
+   (brick-back b)
    (colour (vector (/ (modulo d 6) 6) (/ (modulo d 4) 4) 1)))
   (when (not (brick-is-atom? b))
         (let ((size

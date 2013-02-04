@@ -68,13 +68,20 @@
                  (colour (vector 1 1 0))
                  (build-cube)))
 
-(set! bricks (bricks-add-code bricks controlled-bot))
-(set! bots (add-bot bots 0 (vector 20 46 20) bricks))
 (set! bricks (bricks-add-code bricks default-bot))
-(set! bots (add-bot bots 1 (vector 22 46 20) bricks))
-(set! bot-views (bot-views-update bot-views bots))
+(set! bots (add-bot bots 0 (vector 22 46 20) bricks))
+(set! bot-views (bot-views-update bot-views bots bricks))
 
-(define camera (bot-view-prim (car bot-views)))
+(set! bricks (bricks-add-code bricks controlled-bot))
+(set! bots (add-bot bots 1 (vector 20 46 20) bricks))
+(set! bot-views (bot-views-update bot-views bots bricks))
+
+(set! bricks (bricks-add-code bricks walker-bot))
+(set! bots (add-bot bots 2 (vector 18 46 20) bricks))
+(set! bot-views (bot-views-update bot-views bots bricks))
+
+(define cam-id 0)
+(define camera (bot-view-prim (list-ref-safe bot-views cam-id)))
 (lock-camera camera)
 (with-primitive canvas (parent camera))
 
@@ -89,6 +96,12 @@
                (scale 0.1)
                (get-global-transform)))))
 
+    (when (input-key? input " ")
+          (set! cam-id (+ 1 cam-id))
+          (let ((camera (bot-view-prim (list-ref-safe bot-views cam-id))))
+            (lock-camera camera)
+            (with-primitive canvas (parent camera))))
+
     (set! input (input-update input))
     (set! bots (bots-run-code bots octree input bricks))
     (set! octree (bots-run-actions bots octree))
@@ -101,7 +114,7 @@
                  block-view octree)))
 
     (set! bots (bots-clear-actions bots))
-    (set! bot-views (bot-views-update bot-views bots))
+    (set! bot-views (bot-views-update bot-views bots bricks))
     (set! bricks (bricks-update! bricks tx pos))))
 
 (show-fps 1)
