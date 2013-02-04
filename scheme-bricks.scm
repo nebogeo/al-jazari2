@@ -560,7 +560,10 @@
 
 (define (brick->sexpr b)
   (if (brick-is-atom? b)
-      (string->symbol (brick-text b))
+      (let ((txt (brick-text b)))
+        (if (char=? (string-ref txt 0) #\")
+            (brick-text b)
+            (string->symbol (brick-text b))))
       (apply
        list
        (cons
@@ -613,7 +616,9 @@
           (let ((m (get-global-transform)))
             (identity)
             (parent canvas-root)
-            (concat (mmul (minverse m) (get-global-transform))))) 
+            ;(concat (mmul (minverse m) (get-global-transform)))
+            
+            )) 
          (brick-modify-children
           (lambda (children)
             (filter
@@ -1237,8 +1242,8 @@
           (brick-code-glow! tc)
           #;(brick-code-glow! (brick-depth tc))))))
                 
-(define (bricks-update! b tx)
-  (let* ((pos (vtransform 
+(define (bricks-update! b tx pos)
+  (let* ((pos pos #;(vtransform 
                (vadd (vector 0 drop-fudge 0) (get-point-from-mouse))
                tx)))
     #;(with-primitive pointer
@@ -1271,4 +1276,6 @@
         b (bricks-do-docking  
            b (bricks-do-undocking 
               b (bricks-do-input b pos)))) pos)))
+
+
 

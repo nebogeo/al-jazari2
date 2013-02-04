@@ -31,13 +31,22 @@
            (rotate (vector 0 (* (lerp-angle (bot-view-old-dir bv) 
                                             (bot-dir bot)
                                             (bot-view-t bv)) 90) 0))
-           (bot-view-modify-t bv (+ (bot-view-t bv) 0.1)))
+           (bot-view-modify-t bv (+ (bot-view-t bv) 0.2)))
           ;; update old values and set to 99
-          (bot-view-modify-old-pos
-           (bot-view-modify-old-dir
-            (bot-view-modify-t bv 99)
-            (bot-dir bot))
-           (bot-pos bot)))
+          (with-primitive 
+           (bot-view-prim bv)
+           ;; blend...
+           (identity)
+           (translate (vector 0.5 0.5 0.5))
+           (translate (vlerp (bot-view-old-pos bv) (bot-pos bot) 1))
+           (rotate (vector 0 (* (lerp-angle (bot-view-old-dir bv) 
+                                            (bot-dir bot)
+                                            1) 90) 0))
+           (bot-view-modify-old-pos
+            (bot-view-modify-old-dir
+             (bot-view-modify-t bv 99)
+             (bot-dir bot))
+            (bot-pos bot))))
       ;; if 99 then detect if a move happened
       (if (or (not (veq? (bot-view-old-pos bv) (bot-pos bot)))
               (not (eq? (bot-view-old-dir bv) (bot-dir bot))))
@@ -92,6 +101,10 @@
                       (bot-id bot)))
              (rotate (vector -90 0 90))
              (load-primitive "meshes/bot.obj"))))
+     ;; attach the code brick here
+     (with-primitive 
+      (bot-brick-id bot)
+      (parent p))
      (with-primitive p
       (apply-transform)
       (recalc-normals 1))
