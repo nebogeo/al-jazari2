@@ -3,16 +3,19 @@
 (define (make-block pos size value)
   (with-state
 ;   (hint-wire)
-;   (wire-colour 0)
+ ;  (wire-colour 0)
 
-   (hint-cast-shadow)
+;   (hint-cast-shadow)
 
    (texture (load-texture (string-append "textures/" (number->string value) ".png")))
 
    #;(colour (cond 
-            ((eq? value 0) (vector 1 0 0))
-            ((eq? value 1) (vector 1 1 0))
-            ((eq? value 2) (vector 1 0 1))))
+            ((eq? size 1) (vector 1 0 0))
+            ((eq? size 2) (vector 1 1 0))
+            ((eq? size 4) (vector 0 1 1))
+            ((eq? size 8) (vector 0 1 0))
+            ((eq? size 16) (vector 1 0 1))
+            ((eq? size 32) (vector 0 0 1))))
    
    (translate pos)
    (scale size)

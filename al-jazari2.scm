@@ -17,7 +17,7 @@
     (light-spot-exponent mylight 10)
     (light-attenuation mylight 'constant 1) 
     (light-direction mylight (vector -0.2 -0.8 0.3))
-                                        ;(shadow-light mylight)
+    (shadow-light mylight)
     )
   
   (with-state
