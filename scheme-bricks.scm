@@ -591,10 +591,17 @@
 (define (brick->sexpr b)
   (if (brick-is-atom? b)
       (let ((txt (brick-text b)))
-        (if (char=? (string-ref txt 0) #\")
-            (substring (brick-text b) 1 
-                     (- (string-length (brick-text b)) 1))
-            (string->symbol (brick-text b))))
+        (cond 
+         ;; string
+         ((char=? (string-ref txt 0) #\")
+          (substring (brick-text b) 1 
+                     (- (string-length (brick-text b)) 1)))
+         ;; number
+         ((string->number (brick-text b))
+          (string->number (brick-text b)))
+         ;; symbol
+         (else
+          (string->symbol (brick-text b)))))
       (apply
        list
        (cons

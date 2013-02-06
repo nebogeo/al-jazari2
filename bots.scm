@@ -1,4 +1,3 @@
-;; thinking machines
 
 (load "list.scm")
 (load "octree.scm")
@@ -7,23 +6,33 @@
 
 (define bot-cycle-time 0.5)
 
-(define (make-bot id pos brick-id) (list id pos 0 0 brick-id 'none (+ (time) (random))))
+;; ----------------------------------------------------
+;; thinking machines
+
+(define (make-bot id pos brick-id) (list id pos 0 0 brick-id 'none (+ (time) (random)) #f))
 (define (bot-id b) (list-ref b 0))
 (define (bot-pos b) (list-ref b 1))
 (define (bot-dir b) (list-ref b 2))
 (define (bot-clock b) (list-ref b 3))
 (define (bot-brick-id b) (list-ref b 4))
 (define (bot-action b) (list-ref b 5))
+(define (bot-time b) (list-ref b 6))
+(define (bot-carrying b) (list-ref b 7))
 (define (bot-modify-pos b v) (list-replace b 1 v))
 (define (bot-modify-dir b v) (list-replace b 2 v))
 (define (bot-modify-clock b v) (list-replace b 3 v))
 (define (bot-modify-action b v) (list-replace b 5 v))
-(define (bot-time b) (list-ref b 6))
 (define (bot-modify-time b v) (list-replace b 6 v))
+(define (bot-modify-carrying b v) (list-replace b 7 v))
+
+;; actions:
+;; pickup - pick up block underneath
+;; drop - put block down underneath
 
 (define (bot-run-code bot octree input bricks)
   ;; check gravity first
   (let ((here (octree-ref octree (bot-pos bot)))
+        (up (octree-ref octree (vadd (vector 0 1 0) (bot-pos bot))))
         (under (octree-ref octree (vadd (vector 0 -1 0) (bot-pos bot)))))
     (if (not (eq? here 'e)) ;; 'in' a filled block, go up
         (bot-modify-pos bot (vadd (vector 0 1 0) (bot-pos bot)))
@@ -40,7 +49,7 @@
                                      bot)])
                                  (apply 
                                   (eval (brick->sexpr (bricks-search bricks (bot-brick-id bot))))
-                                  (list bot input)))
+                                  (list bot octree)))
                   (+ (bot-time bot) bot-cycle-time))
                  (+ 1 (bot-clock bot)))
                 bot)))))
@@ -63,67 +72,59 @@
      (if (eq? d 2) (vector 0 0 -1) (vector 0 0 0))
      (if (eq? d 3) (vector -1 0 0) (vector 0 0 0)))))
 
-(define (bot-turn-left bot)
+;; actions for sequencing (all same form)
+
+(define (bot-turn-left bot octree)
   (bot-modify-dir bot (- (bot-dir bot) 1)))
 
-(define (bot-turn-right bot)
+(define (bot-turn-right bot octree)
   (bot-modify-dir bot (+ (bot-dir bot) 1)))
 
-(define (bot-forward bot)
+(define (bot-forward bot octree)
   (bot-modify-pos bot (bot-in-front bot)))
 
-(define (bot-backward bot)
+(define (bot-backward bot octree)
   (bot-modify-pos bot (bot-behind bot)))
 
-(define (bot-do-movement bot input)
-  (bot-modify-dir
-   (bot-modify-pos 
-    bot
-    (if (key-pressed "w")
-        (bot-in-front bot)
-        (if (key-pressed "s")
-            (bot-behind bot)
-            (bot-pos bot))))
-   (+ (bot-dir bot)
-      (if (key-pressed "a") 1 0)
-      (if (key-pressed "d") -1 0))))
+(define (bot-underneath bot)
+  (vadd (bot-pos bot) (vector 0 -1 0)))
 
-(define (bot-sequence bot l)
-  (let ((step (modulo (bot-clock bot) (length l))))
-    (apply (list-ref l step) (list bot))))
-  
-(define walker-bot
-  '(lambda (bot input)
-     (bot-sequence 
-      bot
-      (list
-       bot-forward
-       bot-forward
-       bot-forward
-       bot-forward
-       bot-forward
-       bot-turn-left))))
+(define (bot-pickup bot octree)
+  (if (not (bot-carrying bot))
+      (bot-modify-carrying 
+       (bot-modify-action bot 'pickup)
+       (octree-ref octree (bot-underneath bot))) 
+      bot))
 
-(define controlled-bot 
-  '(lambda (bot input)
-     (bot-do-movement
-      (if (key-pressed "z") 
-          (bot-modify-action bot 'dig)
-          (if (key-pressed "x") 
-              (bot-modify-action bot 'remove)
-              bot))
-      input)))
+(define (bot-drop bot octree)
+  (if (bot-carrying bot)
+      (bot-modify-action bot 'drop)
+      bot))
 
-(define default-bot '(lambda (bot input) bot))
+;; hmm, should be in the view
+
+(define (bot-hide-code bot)
+  (with-primitive (bot-brick-id bot) (hide 1))
+  bot)
+
+(define (bot-unhide-code bot)
+  (with-primitive (bot-brick-id bot) (hide 0))
+  bot)
+
+
+;;--
 
 (define (bot-run-action bot octree)
   (cond 
-   ((eq? (bot-action bot) 'dig)
-    (octree-delete octree (vadd (vector 0 -1 0) (bot-pos bot))))
-   ((eq? (bot-action bot) 'remove)
-    (octree-delete octree (bot-in-front bot)))
+   ((eq? (bot-action bot) 'pickup)
+    (octree-delete octree (bot-underneath bot)))
+   ((eq? (bot-action bot) 'drop)
+    (octree-set octree (bot-pos bot) (bot-carrying bot)))
    (else octree)))
   
+;;-------------------------------------------------------------
+;; a collection of bots
+
 (define (make-bots l) (list l))
 (define (bots-list bs) (list-ref bs 0)) 
 (define (bots-modify-list bs v) (list-replace bs 0 v)) 
@@ -151,9 +152,11 @@
 (define (bots-octree-change? bs)
   (foldl
    (lambda (bot r)
-     (if (and (not r) (or 
-                       (eq? (bot-action bot) 'dig)
-                       (eq? (bot-action bot) 'remove)))
+     (if (and 
+          (not r) 
+          (or 
+           (eq? (bot-action bot) 'pickup)
+           (eq? (bot-action bot) 'drop)))
          #t r))
    #f
    (bots-list bs)))
@@ -163,5 +166,57 @@
    bs
    (map
     (lambda (bot)
-      (bot-modify-action bot 'none))
+      (bot-modify-action 
+       (if (or (eq? (bot-action bot) 'drop)
+               (eq? (bot-action bot) 'place))
+           (bot-modify-carrying bot #f)
+           bot)
+       'none))
     (bots-list bs))))
+
+;; experimental/utility
+
+(define (bot-do-movement bot)
+  (if (key-pressed "h")
+      (bot-hide-code bot)
+      (bot-modify-dir
+       (bot-modify-pos 
+        bot
+        (if (key-pressed "w")
+            (bot-in-front bot)
+            (if (key-pressed "s")
+                (bot-behind bot)
+                (bot-pos bot))))
+       (+ (bot-dir bot)
+          (if (key-pressed "a") 1 0)
+          (if (key-pressed "d") -1 0)))))
+
+(define (bot-sequence bot l)
+  (let ((step (modulo (bot-clock bot) (length l))))
+    (apply (list-ref l step) (list bot octree))))
+  
+(define walker-bot
+  '(lambda (bot octree)
+     (bot-sequence 
+      bot
+      (list
+       bot-forward
+       bot-pickup
+       bot-forward
+       (if (zero? (random 2)) 
+           bot-turn-right
+           bot-turn-left)
+       bot-forward
+       bot-drop
+       bot-turn-left))))
+
+(define controlled-bot 
+  '(lambda (bot octree)
+     (bot-do-movement
+      (if (key-pressed "x") 
+          (bot-pickup bot octree)
+          (if (key-pressed "c") 
+              (bot-drop bot octree)
+              bot)))))
+
+(define default-bot '(lambda (bot octree) bot))
