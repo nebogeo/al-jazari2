@@ -1,3 +1,5 @@
+;; al jazari two (c) 2013 dave griffiths gpl v3
+
 (load "bots.scm")
 
 (define (make-bot-view id prim carry-prim) (cons id (list prim 99 (vector 0 0 0) 0 carry-prim #f)))
@@ -48,7 +50,7 @@
    (rotate (vector 0 (* (lerp-angle (bot-view-old-dir bv) 
                                     (bot-dir bot)
                                     (bot-view-t bv)) 90) 0))
-   (bot-view-modify-t bv (+ (bot-view-t bv) 0.2))))
+   (bot-view-modify-t bv (+ (bot-view-t bv) 0.3))))
 
 (define (bot-view-update-move-end bv bot)
   ;; end of move!

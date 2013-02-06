@@ -233,15 +233,15 @@
          (pdata-set! "p" 7 (vector 5 -1 depth))))
        
        (pdata-map! (lambda (n) (vector 0 0 -1)) "n")
-;       (apply-transform)
+       (apply-transform)
        (backfacecull 0)
        (pdata-copy "p" "pref"))
 
-    (with-primitive 
-   depth-shape-prim
-   (parent prim)
-   (cond 
-    (atom
+      (with-primitive 
+       depth-shape-prim
+       (parent prim)
+       (cond 
+        (atom
      (pdata-set! "p" 0 (vector -1 1 depth)) 
      (pdata-set! "p" 1 (vector -1 1 0)) 
      (pdata-set! "p" 2 (vector 5 1 0))
@@ -500,7 +500,7 @@
    (for ((i (in-range 4 8)))
         (pdata-set! "p" i (vadd (pdata-ref "pref" i) (vector 0 (- n) 0)))))
   (with-primitive 
-   (brick-depth b)
+   (brick-back b)
    (for ((i (in-range 4 8)))
         (pdata-set! "p" i (vadd (pdata-ref "pref" i) (vector 0 (- n) 0)))))
   (with-primitive 

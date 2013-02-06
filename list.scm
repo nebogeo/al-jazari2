@@ -1,3 +1,5 @@
+;; al jazari two (c) 2013 dave griffiths gpl v3
+
 ;; (list-replace '(1 2 3 4) 2 100) => '(1 2 100 4)
 (define (list-replace l i v)
   (cond

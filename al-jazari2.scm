@@ -1,3 +1,5 @@
+;; al jazari two (c) 2013 dave griffiths gpl v3
+
 (clear)
 
 (load "botview.scm")
@@ -29,23 +31,45 @@
    (texture-params 0 '(min nearest mag nearest))
    (build-sphere 20 20)))
 
+#;(define octree
+  (octree-compress
+   (octree-compress
+    (octree-compress
+     (octree-compress
+      (octree-compress
+       (octree-compress
+        (octree-delete-sphere
+         (octree-fill-sphere
+          (octree-fill-sphere
+           (octree-box 
+            (make-empty-octree)        
+            (vector 0 0 0)
+            (vector 64 32 64) 0)
+           (vector 32 32 32) 10 1)
+          (vector 20 32 12) 5 2)
+         (vector 32 35 26) 8))))))))
+
 (define octree
   (octree-compress
    (octree-compress
     (octree-compress
-     (octree-delete-sphere
-;      (octree-fill-sphere
-       (octree-fill-sphere
-        (octree-fill-sphere
-         (octree-box 
-          (make-empty-octree)        
-          (vector 0 0 0)
-          (vector 64 32 64) 0)
-         (vector 32 32 32) 10 1)
-        (vector 20 32 12) 5 2)
- ;      (vector 40 28 20) 10 2)
-      (vector 32 35 26) 8)))))
-
+     (octree-compress
+      (octree-compress
+       (octree-compress
+        (octree-box
+         (octree-fill-sphere
+          (octree-delete-box
+           (octree-fill-sphere
+            (octree-fill-sphere
+             (make-empty-octree)        
+             (vector 32 32 32) 20 0)
+            (vector 32 32 32) 10 1)
+           (vector 0 32 0) 
+           (vector 64 64 64))
+           (vector 31 31 31) 3 2)
+         (vector 0 0 0)
+         (vector 64 30 64) 3))))))))
+  
 (define (add-bot bots id pos bricks)
   (bots-add-bot 
    bots

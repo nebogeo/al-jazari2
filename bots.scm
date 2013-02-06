@@ -1,10 +1,11 @@
+;; al jazari two (c) 2013 dave griffiths gpl v3
 
 (load "list.scm")
 (load "octree.scm")
 (load "input.scm")
 (load "scheme-bricks.scm")
 
-(define bot-cycle-time 0.5)
+(define bot-cycle-time 0.3)
 
 ;; ----------------------------------------------------
 ;; thinking machines
@@ -32,7 +33,6 @@
 (define (bot-run-code bot octree input bricks)
   ;; check gravity first
   (let ((here (octree-ref octree (bot-pos bot)))
-        (up (octree-ref octree (vadd (vector 0 1 0) (bot-pos bot))))
         (under (octree-ref octree (vadd (vector 0 -1 0) (bot-pos bot)))))
     (if (not (eq? here 'e)) ;; 'in' a filled block, go up
         (bot-modify-pos bot (vadd (vector 0 1 0) (bot-pos bot)))
@@ -81,7 +81,12 @@
   (bot-modify-dir bot (+ (bot-dir bot) 1)))
 
 (define (bot-forward bot octree)
-  (bot-modify-pos bot (bot-in-front bot)))
+  ;; check space clear
+  (if (or (eq? (octree-ref octree (bot-in-front bot)) 'e)
+          (eq? (octree-ref octree (vadd (vector 0 1 0)
+                                        (bot-in-front bot))) 'e))
+      (bot-modify-pos bot (bot-in-front bot))
+      bot))
 
 (define (bot-backward bot octree)
   (bot-modify-pos bot (bot-behind bot)))
@@ -176,17 +181,15 @@
 
 ;; experimental/utility
 
-(define (bot-do-movement bot)
+(define (bot-do-movement bot octree)
   (if (key-pressed "h")
       (bot-hide-code bot)
       (bot-modify-dir
-       (bot-modify-pos 
-        bot
-        (if (key-pressed "w")
-            (bot-in-front bot)
+       (if (key-pressed "w")
+            (bot-forward bot octree)
             (if (key-pressed "s")
-                (bot-behind bot)
-                (bot-pos bot))))
+                (bot-backward bot octree)
+                bot))
        (+ (bot-dir bot)
           (if (key-pressed "a") 1 0)
           (if (key-pressed "d") -1 0)))))
@@ -201,11 +204,8 @@
       bot
       (list
        bot-forward
-       bot-pickup
        bot-forward
-       (if (zero? (random 2)) 
-           bot-turn-right
-           bot-turn-left)
+       bot-pickup
        bot-forward
        bot-drop
        bot-turn-left))))
@@ -217,6 +217,7 @@
           (bot-pickup bot octree)
           (if (key-pressed "c") 
               (bot-drop bot octree)
-              bot)))))
+              bot))
+      octree)))
 
 (define default-bot '(lambda (bot octree) bot))

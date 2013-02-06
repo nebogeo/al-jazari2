@@ -1,3 +1,4 @@
+;; al jazari two (c) 2013 dave griffiths gpl v3
 
 (define octree-size 64)
 (define octree-depth 6)
@@ -173,6 +174,14 @@
    (lambda (o pos)
      (if (inside? pos min max)
          (octree-set o pos v)
+         o))))
+
+(define (octree-delete-box o min max)
+  (octree-fold
+   o
+   (lambda (o pos)
+     (if (inside? pos min max)
+         (octree-delete o pos)
          o))))
 
 (define (octree-fill-sphere o pos size v)

@@ -1,3 +1,5 @@
+;; al jazari two (c) 2013 dave griffiths gpl v3
+
 (load "blockview.scm")
 
 (define octree
