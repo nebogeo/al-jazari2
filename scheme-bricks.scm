@@ -188,25 +188,27 @@
                         (with-primitive 
                          text-prim
                          (set-text text))
-                        text-prim))))
+                        text-prim)))
+         (width 6))
+
     (with-primitive 
      prim
      ;;(hint-none)(hint-wire)
      (cond 
       (atom
-       (pdata-set! "p" 0 (vector 5 0 0))
-       (pdata-set! "p" 1 (vector 5 1 0))
+       (pdata-set! "p" 0 (vector width 0 0))
+       (pdata-set! "p" 1 (vector width 1 0))
        (pdata-set! "p" 2 (vector -1 0 0))
        (pdata-set! "p" 3 (vector -1 1 0)))
       (else
-       (pdata-set! "p" 0 (vector 5 0 0))
-       (pdata-set! "p" 1 (vector 5 1 0))
+       (pdata-set! "p" 0 (vector width 0 0))
+       (pdata-set! "p" 1 (vector width 1 0))
        (pdata-set! "p" 2 (vector 0 0 0))
        (pdata-set! "p" 3 (vector -1 1 0))
        (pdata-set! "p" 4 (vector 0 0 0))
        (pdata-set! "p" 5 (vector -1 -1 0))
-       (pdata-set! "p" 6 (vector 5 0 0))
-       (pdata-set! "p" 7 (vector 5 -1 0))))                      
+       (pdata-set! "p" 6 (vector width 0 0))
+       (pdata-set! "p" 7 (vector width -1 0))))                      
      (pdata-map! (lambda (n) (vector 0 0 1)) "n")
      (apply-transform)
      (pdata-copy "p" "pref"))
@@ -218,19 +220,19 @@
        (parent prim)
        (cond 
         (atom
-         (pdata-set! "p" 0 (vector 5 0 depth))
-         (pdata-set! "p" 1 (vector 5 1 depth))
+         (pdata-set! "p" 0 (vector width 0 depth))
+         (pdata-set! "p" 1 (vector width 1 depth))
          (pdata-set! "p" 2 (vector -1 0 depth))
          (pdata-set! "p" 3 (vector -1 1 depth)))
         (else
-         (pdata-set! "p" 0 (vector 5 0 depth))
-         (pdata-set! "p" 1 (vector 5 1 depth))
+         (pdata-set! "p" 0 (vector width 0 depth))
+         (pdata-set! "p" 1 (vector width 1 depth))
          (pdata-set! "p" 2 (vector 0 0 depth))
          (pdata-set! "p" 3 (vector -1 1 depth))
          (pdata-set! "p" 4 (vector 0 0 depth))
          (pdata-set! "p" 5 (vector -1 -1 depth))
-         (pdata-set! "p" 6 (vector 5 0 depth))
-         (pdata-set! "p" 7 (vector 5 -1 depth))))
+         (pdata-set! "p" 6 (vector width 0 depth))
+         (pdata-set! "p" 7 (vector width -1 depth))))
        
        (pdata-map! (lambda (n) (vector 0 0 -1)) "n")
        (apply-transform)
@@ -244,26 +246,26 @@
         (atom
      (pdata-set! "p" 0 (vector -1 1 depth)) 
      (pdata-set! "p" 1 (vector -1 1 0)) 
-     (pdata-set! "p" 2 (vector 5 1 0))
-     (pdata-set! "p" 3 (vector 5 1 depth))
+     (pdata-set! "p" 2 (vector width 1 0))
+     (pdata-set! "p" 3 (vector width 1 depth))
      
      (pdata-set! "n" 0 (vector 0 1 0)) 
      (pdata-set! "n" 1 (vector 0 1 0)) 
      (pdata-set! "n" 2 (vector 0 1 0))
      (pdata-set! "n" 3 (vector 0 1 0))
      
-     (pdata-set! "p" 4 (vector 5 1 depth))
-     (pdata-set! "p" 5 (vector 5 1 0))
-     (pdata-set! "p" 6 (vector 5 0 0))
-     (pdata-set! "p" 7 (vector 5 0 depth))
+     (pdata-set! "p" 4 (vector width 1 depth))
+     (pdata-set! "p" 5 (vector width 1 0))
+     (pdata-set! "p" 6 (vector width 0 0))
+     (pdata-set! "p" 7 (vector width 0 depth))
      
      (pdata-set! "n" 4 (vector 1 0 0)) 
      (pdata-set! "n" 5 (vector 1 0 0)) 
      (pdata-set! "n" 6 (vector 1 0 0))
      (pdata-set! "n" 7 (vector 1 0 0))
      
-     (pdata-set! "p" 8 (vector 5 0 depth))
-     (pdata-set! "p" 9 (vector 5 0 0))
+     (pdata-set! "p" 8 (vector width 0 depth))
+     (pdata-set! "p" 9 (vector width 0 0))
      (pdata-set! "p" 10 (vector -1 0 0)) 
      (pdata-set! "p" 11 (vector -1 0 depth))
      
@@ -284,24 +286,24 @@
     (else
      (pdata-set! "p" 0 (vector 0 0 0))
      (pdata-set! "p" 1 (vector 0 0 depth))
-     (pdata-set! "p" 2 (vector 5 0 depth))
-     (pdata-set! "p" 3 (vector 5 0 0))
+     (pdata-set! "p" 2 (vector width 0 depth))
+     (pdata-set! "p" 3 (vector width 0 0))
      (pdata-set! "n" 0 (vector 0 -1 0))
      (pdata-set! "n" 1 (vector 0 -1 0))
      (pdata-set! "n" 2 (vector 0 -1 0))
      (pdata-set! "n" 3 (vector 0 -1 0))
      
-     (pdata-set! "p" 4 (vector 5 0 0))
-     (pdata-set! "p" 5 (vector 5 0 depth))
-     (pdata-set! "p" 6 (vector 5 1 depth))
-     (pdata-set! "p" 7 (vector 5 1 0))
+     (pdata-set! "p" 4 (vector width 0 0))
+     (pdata-set! "p" 5 (vector width 0 depth))
+     (pdata-set! "p" 6 (vector width 1 depth))
+     (pdata-set! "p" 7 (vector width 1 0))
      (pdata-set! "n" 4 (vector 1 0 0))
      (pdata-set! "n" 5 (vector 1 0 0))
      (pdata-set! "n" 6 (vector 1 0 0))
      (pdata-set! "n" 7 (vector 1 0 0))
      
-     (pdata-set! "p" 8 (vector 5 1 0))
-     (pdata-set! "p" 9 (vector 5 1 depth))
+     (pdata-set! "p" 8 (vector width 1 0))
+     (pdata-set! "p" 9 (vector width 1 depth))
      (pdata-set! "p" 10 (vector -1 1 depth))
      (pdata-set! "p" 11 (vector -1 1 0))
      (pdata-set! "n" 8 (vector 0 1 0))
@@ -329,24 +331,24 @@
      
      (pdata-set! "p" 20 (vector -1 -1 0)) ;--
      (pdata-set! "p" 21 (vector -1 -1 depth)) ;--
-     (pdata-set! "p" 22 (vector 5 -1 depth)) ;--
-     (pdata-set! "p" 23 (vector 5 -1 0)) ;--
+     (pdata-set! "p" 22 (vector width -1 depth)) ;--
+     (pdata-set! "p" 23 (vector width -1 0)) ;--
      (pdata-set! "n" 20 (vector 0 -1 0))
      (pdata-set! "n" 21 (vector 0 -1 0))
      (pdata-set! "n" 22 (vector 0 -1 0))
      (pdata-set! "n" 23 (vector 0 -1 0))                            
      
-     (pdata-set! "p" 24 (vector 5 -1 0)) ;--
-     (pdata-set! "p" 25 (vector 5 -1 depth)) ;--
-     (pdata-set! "p" 26 (vector 5 0 depth)) ;--
-     (pdata-set! "p" 27 (vector 5 0 0)) ;--
+     (pdata-set! "p" 24 (vector width -1 0)) ;--
+     (pdata-set! "p" 25 (vector width -1 depth)) ;--
+     (pdata-set! "p" 26 (vector width 0 depth)) ;--
+     (pdata-set! "p" 27 (vector width 0 0)) ;--
      (pdata-set! "n" 24 (vector 1 0 0))
      (pdata-set! "n" 25 (vector 1 0 0))
      (pdata-set! "n" 26 (vector 1 0 0))
      (pdata-set! "n" 27 (vector 1 0 0))                            
      
-     (pdata-set! "p" 28 (vector 5 0 0)) ;--
-     (pdata-set! "p" 29 (vector 5 0 depth)) ;--
+     (pdata-set! "p" 28 (vector width 0 0)) ;--
+     (pdata-set! "p" 29 (vector width 0 depth)) ;--
      (pdata-set! "p" 30 (vector 0 0 depth)) ; --
      (pdata-set! "p" 31 (vector 0 0 0)) ; --
      (pdata-set! "n" 28 (vector 0 1 0))

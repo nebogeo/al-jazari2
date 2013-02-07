@@ -9,6 +9,7 @@
 
 ;   (hint-cast-shadow)
 
+   (hint-frustum-cull)
    (texture (load-texture (string-append "textures/" (number->string value) ".png")))
 
    #;(colour (cond 
@@ -25,7 +26,8 @@
    (let ((p (build-cube)))
      (with-primitive 
       p
-      (pdata-map! (lambda (t) (vmul t size)) "t"))
+      (pdata-map! (lambda (t) (vmul t size)) "t")
+      (recalc-bb))
      p)))
 
 (define (block-view-builder o x y z depth)

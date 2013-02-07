@@ -5,7 +5,7 @@
 (load "input.scm")
 (load "scheme-bricks.scm")
 
-(define bot-cycle-time 0.3)
+(define bot-cycle-time 1.3)
 
 ;; ----------------------------------------------------
 ;; thinking machines
@@ -75,24 +75,31 @@
 ;; actions for sequencing (all same form)
 
 (define (bot-turn-left bot octree)
-  (bot-modify-dir bot (- (bot-dir bot) 1)))
-
-(define (bot-turn-right bot octree)
   (bot-modify-dir bot (+ (bot-dir bot) 1)))
 
+(define (bot-turn-right bot octree)
+  (bot-modify-dir bot (- (bot-dir bot) 1)))
+
 (define (bot-forward bot octree)
-  ;; check space clear
-  (if (or (eq? (octree-ref octree (bot-in-front bot)) 'e)
-          (eq? (octree-ref octree (vadd (vector 0 1 0)
-                                        (bot-in-front bot))) 'e))
-      (bot-modify-pos bot (bot-in-front bot))
-      bot))
+  ;; check edge of world and space clear
+  (let ((pos (bot-in-front bot)))
+    (if (and
+         (>= (vx pos) 0) (< (vx pos) octree-size)
+         (>= (vz pos) 0) (< (vz pos) octree-size)
+         (or (eq? (octree-ref octree pos) 'e)
+             (eq? (octree-ref octree (vadd (vector 0 1 0)
+                                           (bot-in-front bot))) 'e)))
+        (bot-modify-pos bot pos)
+        bot)))
 
 (define (bot-backward bot octree)
   (bot-modify-pos bot (bot-behind bot)))
 
 (define (bot-underneath bot)
   (vadd (bot-pos bot) (vector 0 -1 0)))
+
+(define (bot-ontop bot)
+  (vadd (bot-pos bot) (vector 0 1 0)))
 
 (define (bot-pickup bot octree)
   (if (not (bot-carrying bot))
@@ -103,7 +110,13 @@
 
 (define (bot-drop bot octree)
   (if (bot-carrying bot)
-      (bot-modify-action bot 'drop)
+      ;; the the space in front is free
+      (if #f #;(eq? (octree-ref octree (bot-in-front bot)) 'e)
+          (bot-modify-action bot 'drop-in-front)
+          ;; otherwise go underneath
+          (bot-modify-action       
+           (bot-modify-pos bot (bot-ontop bot))
+           'drop))
       bot))
 
 ;; hmm, should be in the view
@@ -124,7 +137,9 @@
    ((eq? (bot-action bot) 'pickup)
     (octree-delete octree (bot-underneath bot)))
    ((eq? (bot-action bot) 'drop)
-    (octree-set octree (bot-pos bot) (bot-carrying bot)))
+    (octree-set octree (vadd (bot-pos bot) (vector 0 -1 0)) (bot-carrying bot)))
+   ((eq? (bot-action bot) 'drop-in-front)
+    (octree-set octree (bot-in-front bot) (bot-carrying bot)))
    (else octree)))
   
 ;;-------------------------------------------------------------
@@ -161,7 +176,8 @@
           (not r) 
           (or 
            (eq? (bot-action bot) 'pickup)
-           (eq? (bot-action bot) 'drop)))
+           (eq? (bot-action bot) 'drop)
+           (eq? (bot-action bot) 'drop-in-front)))
          #t r))
    #f
    (bots-list bs)))
@@ -172,7 +188,8 @@
    (map
     (lambda (bot)
       (bot-modify-action 
-       (if (or (eq? (bot-action bot) 'drop)
+       (if (or (eq? (bot-action bot) 'drop-in-front)
+               (eq? (bot-action bot) 'drop)
                (eq? (bot-action bot) 'place))
            (bot-modify-carrying bot #f)
            bot)
@@ -198,18 +215,6 @@
   (let ((step (modulo (bot-clock bot) (length l))))
     (apply (list-ref l step) (list bot octree))))
   
-(define walker-bot
-  '(lambda (bot octree)
-     (bot-sequence 
-      bot
-      (list
-       bot-forward
-       bot-forward
-       bot-pickup
-       bot-forward
-       bot-drop
-       bot-turn-left))))
-
 (define controlled-bot 
   '(lambda (bot octree)
      (bot-do-movement

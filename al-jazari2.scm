@@ -49,26 +49,43 @@
           (vector 20 32 12) 5 2)
          (vector 32 35 26) 8))))))))
 
-(define octree
+(define (octree-compresss octree)
   (octree-compress
    (octree-compress
     (octree-compress
      (octree-compress
       (octree-compress
-       (octree-compress
-        (octree-box
-         (octree-fill-sphere
-          (octree-delete-box
-           (octree-fill-sphere
-            (octree-fill-sphere
-             (make-empty-octree)        
-             (vector 32 32 32) 20 0)
-            (vector 32 32 32) 10 1)
-           (vector 0 32 0) 
-           (vector 64 64 64))
-           (vector 31 31 31) 3 2)
-         (vector 0 0 0)
-         (vector 64 30 64) 3))))))))
+       (octree-compress octree)))))))
+        
+(define (octree-land octree)
+   (octree-fill-sphere
+    (octree-delete-box
+     (octree-fill-sphere
+      (make-empty-octree)        
+      (vector 32 32 32) 20 0)
+     (vector 0 32 0) 
+    (vector 64 64 64))
+    (vector 32 15 32) 20 1))
+
+(define (octree-tree pos size octree)
+  (octree-fill-sphere
+   (octree-box
+    octree
+    (vadd pos (vector 0 0 0))
+    (vadd pos (vector 1 4 1)) 0)
+   (vadd pos (vector 0 (+ 3 size) 0))
+   size 1))
+
+(define octree
+  (octree-compresss
+   (octree-box
+    (octree-tree
+     (vector 35 33 27) 2
+     (octree-tree
+      (vector 31 34 31) 4
+      (octree-land (make-empty-octree))))
+     (vector 0 0 0)
+     (vector 64 30 64) 3)))
   
 (define (add-bot bots id pos bricks)
   (bots-add-bot 
@@ -88,20 +105,37 @@
 (setup-scene)
 (define pointer (with-state 
                  (parent canvas) 
-                 (scale 0.1) 
+                 (scale 0.1)
                  (colour (vector 1 1 0))
                  (build-cube)))
 
-(set! bricks (bricks-add-code bricks default-bot))
-(set! bots (add-bot bots 0 (vector 22 46 20) bricks))
-(set! bot-views (bot-views-update bot-views bots bricks))
-
 (set! bricks (bricks-add-code bricks controlled-bot))
-(set! bots (add-bot bots 1 (vector 20 46 20) bricks))
+(set! bots (add-bot bots 0 (vector 27 36 26) bricks))
 (set! bot-views (bot-views-update bot-views bots bricks))
 
-(set! bricks (bricks-add-code bricks walker-bot))
-(set! bots (add-bot bots 2 (vector 18 46 20) bricks))
+(set! bricks (bricks-add-code bricks default-bot))
+(set! bots (add-bot bots 1 (vector 25 36 26) bricks))
+(set! bot-views (bot-views-update bot-views bots bricks))
+
+(set! bricks (bricks-add-code bricks default-bot))
+(set! bots (add-bot bots 2 (vector 23 36 26) bricks))
+(set! bot-views (bot-views-update bot-views bots bricks))
+
+(set! bricks (bricks-add-code bricks   
+                              '(lambda (bot octree)
+                                 (bot-sequence 
+                                  bot
+                                  (list
+                                   bot-forward
+                                   bot-pickup
+                                   bot-forward
+                                   bot-forward
+                                   bot-forward
+                                   bot-forward
+                                   bot-drop
+                                   bot-turn-left)))))
+
+(set! bots (add-bot bots 3 (vector 21 36 26) bricks))
 (set! bot-views (bot-views-update bot-views bots bricks))
 
 (define cam-id 0)
@@ -139,7 +173,9 @@
 
     (set! bots (bots-clear-actions bots))
     (set! bot-views (bot-views-update bot-views bots bricks))
-    (set! bricks (bricks-update! bricks tx pos))))
+    (set! bricks (bricks-update! bricks tx pos))
+))
 
 (show-fps 1)
 (every-frame (update))
+(start-framedump "bottest1-" "jpg")
