@@ -10,6 +10,7 @@
 ;   (hint-cast-shadow)
 
    (hint-frustum-cull)
+   (texture-params 0 '(min linear-mipmap-linear mag nearest))
    (texture (load-texture (string-append "textures/" (number->string value) ".png")))
 
    #;(colour (cond 

@@ -656,8 +656,8 @@
           (let ((m (get-global-transform)))
             (identity)
             (parent canvas-root)
-            ;(concat (mmul (minverse m) (get-global-transform)))
-            
+;            (concat (mmul (minverse m) (get-global-transform)))
+            (scale 0.2)
             )) 
          (brick-modify-children
           (lambda (children)
@@ -760,7 +760,7 @@
 ;---------------------------------------------------------  
 
 (define (make-bricks root)
-  (list '() (vector 0 0 0) #f #f #f #f #f '() #f 0 root))
+  (list '() (vector 0 0 0) #f #f #f #f #f '() #f 0 root (vector 0 0 0)))
 
 (define (bricks-roots b) (list-ref b 0))
 (define (bricks-modify-roots f b) (list-replace b 0 (f (bricks-roots b))))
@@ -783,6 +783,8 @@
 (define (bricks-history b) (list-ref b 9))
 (define (bricks-modify-history f b) (list-replace b 9 (f (bricks-history b))))
 (define (bricks-root b) (list-ref b 10))
+(define (bricks-local-mouse b) (list-ref b 11))
+(define (bricks-modify-local-mouse f b) (list-replace b 11 (f (bricks-local-mouse b))))
 
 (define (bricks-save b fn)
   (let ((f (open-output-file fn #:exists 'replace)))
@@ -1285,7 +1287,7 @@
           (brick-code-glow! tc)
           #;(brick-code-glow! (brick-depth tc))))))
                 
-(define (bricks-update! b tx pos)
+(define (bricks-update! b tx pos loc-pos)
   (let* ((pos pos #;(vtransform 
                (vadd (vector 0 drop-fudge 0) (get-point-from-mouse))
                tx)))
@@ -1305,20 +1307,27 @@
 
     ; move the current brick
     (when (list? (bricks-current b))
-          (with-primitive 
-           (brick-id (bricks-current b))
-           (when (and (mouse-button 1) (bricks-button b))
-                 (translate (vdiv
-                             (vsub pos (bricks-mouse b))
-                             (* (brick-get-scale (bricks-current b))
-                                lag-fudge))))))
-
+          (let ((world->canvas (with-primitive (bricks-root b) (get-global-transform))))
+            (with-primitive 
+             (brick-id (bricks-current b))
+             (when (and (mouse-button 1) (bricks-button b))
+                   (translate (vdiv
+                                (vsub loc-pos
+                                      (bricks-local-mouse b))
+                                (* (brick-get-scale (bricks-current b))
+                                   lag-fudge))
+                               )
+                   ))))
+          
     ; update the input stuff
     (bricks-do-typing
      b (bricks-remove-ghost
         b (bricks-do-docking  
            b (bricks-do-undocking 
-              b (bricks-do-input b pos)))) pos)))
+              b (bricks-do-input 
+                 (bricks-modify-local-mouse 
+                  (lambda (m) loc-pos) b)
+                  pos)))) pos)))
 
 
 

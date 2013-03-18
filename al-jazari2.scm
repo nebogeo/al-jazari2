@@ -58,14 +58,17 @@
        (octree-compress octree)))))))
         
 (define (octree-land octree)
+  (octree-delete-box
    (octree-fill-sphere
-    (octree-delete-box
-     (octree-fill-sphere
-      (make-empty-octree)        
-      (vector 32 32 32) 20 0)
-     (vector 0 32 0) 
-    (vector 64 64 64))
-    (vector 32 15 32) 20 1))
+    (octree-fill-sphere
+     (octree-box 
+      (make-empty-octree)
+      (vector 0 0 0)
+      (vector 64 64 64) 2)
+     (vector 32 32 32) 20 4)
+    (vector 32 15 32) 20 5)
+   (vector 0 32 0) 
+   (vector 64 64 64)))
 
 (define (octree-tree pos size octree)
   (octree-fill-sphere
@@ -78,14 +81,14 @@
 
 (define octree
   (octree-compresss
+    (octree-land (make-empty-octree))))
+
+#;(define octree
+  (octree-compresss
    (octree-box
-    (octree-tree
-     (vector 35 33 27) 2
-     (octree-tree
-      (vector 31 34 31) 4
-      (octree-land (make-empty-octree))))
-     (vector 0 0 0)
-     (vector 64 30 64) 3)))
+    (make-empty-octree)
+    (vector 0 0 0)
+    (vector 64 30 64) 2)))
   
 (define (add-bot bots id pos bricks)
   (bots-add-bot 
@@ -113,29 +116,85 @@
 (set! bots (add-bot bots 0 (vector 27 36 26) bricks))
 (set! bot-views (bot-views-update bot-views bots bricks))
 
-(set! bricks (bricks-add-code bricks default-bot))
+#;((set! bricks (bricks-add-code bricks default-bot))
 (set! bots (add-bot bots 1 (vector 25 36 26) bricks))
 (set! bot-views (bot-views-update bot-views bots bricks))
 
 (set! bricks (bricks-add-code bricks default-bot))
 (set! bots (add-bot bots 2 (vector 23 36 26) bricks))
 (set! bot-views (bot-views-update bot-views bots bricks))
+)
+
+(define (wall n)
+  (loop
+   n x
+   pickup
+   forward
+   drop
+   turn-left
+   forward
+   turn-left
+   forward
+   turn-right
+   turn-right))
+
+(define (ridge-trench size gap)
+  (seq
+   (repeat size pos
+    pickup
+    (repeat (+ (* pos 2) 1 gap) n 
+     forward)  ;; move forward leaving steps
+    drop
+    turn-left
+    turn-left
+    (repeat (+ (* (+ pos 1) 2) gap) pos 
+     forward) ;; move back to the last pos
+    turn-left
+    turn-left)
+   (repeat size pos  ;; move back to 
+    forward))) ;; start position
+
+(define (plateau size gap)
+  (seq
+   (repeat size row
+    (ridge-trench size gap)
+    turn-left   ;; move sideways 
+    forward     ;; for next trench
+    turn-right) 
+   turn-right ;; move back
+   (repeat size row  ;; to start position
+         forward)
+   turn-left))
+
+(define (pyramid size)
+  (repeat
+   (/ size 2) level
+   (plateau (- size (* level 2)) (+ (* level 2) 1))
+   backward
+   turn-left
+   forward
+   turn-right))
+  
+
+(define size 8)
 
 (set! bricks (bricks-add-code bricks   
                               '(lambda (bot octree)
                                  (bot-sequence 
                                   bot
-                                  (list
-                                   bot-forward
-                                   bot-pickup
-                                   bot-forward
-                                   bot-forward
-                                   bot-forward
-                                   bot-forward
-                                   bot-drop
-                                   bot-turn-left)))))
 
-(set! bots (add-bot bots 3 (vector 21 36 26) bricks))
+(repeat
+   (/ size 2) level
+   (plateau (- size (* level 2)) (+ (* level 2) 1))
+   backward
+   turn-left
+   forward
+   turn-right)
+
+                                        ;  (pyramid 8)
+                                  ))))
+
+(set! bots (add-bot bots 3 (vector 19 36 26) bricks))
 (set! bot-views (bot-views-update bot-views bots bricks))
 
 (define cam-id 0)
@@ -149,10 +208,12 @@
               (vector 0 0 0) 
               (with-primitive 
                pointer
+               (hide 1)
                (identity)
                (translate (get-point-from-mouse))
                (scale 0.1)
-               (get-global-transform)))))
+               (get-global-transform))))
+        (loc-pos (vtransform (vector 0 0 0) (with-primitive pointer (get-transform)))))
 
     (when (input-key? input " ")
           (set! cam-id (+ 1 cam-id))
@@ -173,9 +234,14 @@
 
     (set! bots (bots-clear-actions bots))
     (set! bot-views (bot-views-update bot-views bots bricks))
-    (set! bricks (bricks-update! bricks tx pos))
+    (set! bricks (bricks-update! bricks tx pos loc-pos))
 ))
 
 (show-fps 1)
 (every-frame (update))
-(start-framedump "bottest1-" "jpg")
+
+(unlock-camera)
+
+(display (length (loop-explode (pyramid 8))))(newline)
+
+;(start-framedump "frames/comp-" "jpg")

@@ -50,7 +50,7 @@
    (rotate (vector 0 (* (lerp-angle (bot-view-old-dir bv) 
                                     (bot-dir bot)
                                     (bot-view-t bv)) 90) 0))
-   (bot-view-modify-t bv (+ (bot-view-t bv) 0.3))))
+   (bot-view-modify-t bv (+ (bot-view-t bv) 0.2))))
 
 (define (bot-view-update-move-end bv bot)
   ;; end of move!

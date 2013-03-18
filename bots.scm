@@ -5,7 +5,7 @@
 (load "input.scm")
 (load "scheme-bricks.scm")
 
-(define bot-cycle-time 1.3)
+(define bot-cycle-time 2.3)
 
 ;; ----------------------------------------------------
 ;; thinking machines
@@ -211,10 +211,73 @@
           (if (key-pressed "a") 1 0)
           (if (key-pressed "d") -1 0)))))
 
+
+
+(define (lp n fn)
+  (list n fn))
+
+(define (loop-repeats s) (list-ref s 0))
+(define (loop-fn s) (list-ref s 1))
+
+(define (loop-duplicate s)
+  (define (_ n)
+    (cond
+      ((eq? n (loop-repeats s)) '())
+      (else 
+       (append ((loop-fn s) n) 
+               (_ (+ n 1))))))
+  (_ 0))
+
+(define (list-explode l)
+  (cond
+    ((null? l) '())
+    ((list? (car l)) 
+     (list-explode 
+      (append 
+       (loop-duplicate (car l))
+       (list-explode (cdr l)))))
+    (else
+     (cons (car l) 
+           (list-explode (cdr l))))))
+
+(define (loop-explode s)
+  (list-explode (loop-duplicate s)))
+
+(define-syntax repeat
+  (syntax-rules ()
+    ((_ n i a ...)
+     (lp n 
+         (lambda (i)
+           (list a ...))))))
+
+(define (seq . l) 
+  (lp 1 (lambda (i) l)))
+
+(define forward 'forward)
+(define backward 'backward)
+(define turn-left 'turn-left)
+(define turn-right 'turn-right)
+(define pickup 'pickup)
+(define drop 'drop)
+
 (define (bot-sequence bot l)
-  (let ((step (modulo (bot-clock bot) (length l))))
-    (apply (list-ref l step) (list bot octree))))
-  
+  (let* ((exploded (loop-explode l))
+         (step (bot-clock bot))
+         (instr (if (< step (length exploded))
+                    (list-ref exploded step)
+                    'nop)))
+    (cond 
+     ((eq? instr 'nop) bot)
+     ((eq? instr 'forward) (bot-forward bot octree))
+     ((eq? instr 'backward) (bot-backward bot octree))
+     ((eq? instr 'turn-left) (bot-turn-left bot octree))
+     ((eq? instr 'turn-right) (bot-turn-right bot octree))
+     ((eq? instr 'pickup) (bot-pickup bot octree))
+     ((eq? instr 'drop) (bot-drop bot octree))
+     (else 
+      (display "unknown instruction: ")
+      (display instr)(newline) bot))))
+
 (define controlled-bot 
   '(lambda (bot octree)
      (bot-do-movement
