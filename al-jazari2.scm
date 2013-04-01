@@ -6,89 +6,15 @@
 (load "blockview.scm")
 (load "input.scm")
 
-(define (setup-scene)
-  (set-camera-transform (mtranslate (vector 0 -3 -5)))
-
-  (light-diffuse 0 (vector 0.4 0.4 0.4))
-  (light-specular 0 (vector 0.1 0.1 0.1))
-
-  (let ((mylight (make-light 'spot 'free)))
-    (light-position mylight (vector 200 500 -200))
-    (light-diffuse mylight (vector 1 1 1))
-    (light-spot-angle mylight 60)
-    (light-spot-exponent mylight 10)
-    (light-attenuation mylight 'constant 1) 
-    (light-direction mylight (vector -0.2 -0.8 0.3))
-    (shadow-light mylight)
-    )
-  
-  (with-state
-   (hint-unlit)
-   (rotate (vector 180 0 0))
-   (texture (load-texture "textures/bg.png"))    
-   (scale 1000)
-   (backfacecull 0)
-   (texture-params 0 '(min nearest mag nearest))
-   (build-sphere 20 20)))
-
-#;(define octree
-  (octree-compress
-   (octree-compress
-    (octree-compress
-     (octree-compress
-      (octree-compress
-       (octree-compress
-        (octree-delete-sphere
-         (octree-fill-sphere
-          (octree-fill-sphere
-           (octree-box 
-            (make-empty-octree)        
-            (vector 0 0 0)
-            (vector 64 32 64) 0)
-           (vector 32 32 32) 10 1)
-          (vector 20 32 12) 5 2)
-         (vector 32 35 26) 8))))))))
-
-(define (octree-compresss octree)
-  (octree-compress
-   (octree-compress
-    (octree-compress
-     (octree-compress
-      (octree-compress
-       (octree-compress octree)))))))
-        
-(define (octree-land octree)
-  (octree-delete-box
-   (octree-fill-sphere
-    (octree-fill-sphere
-     (octree-box 
-      (make-empty-octree)
-      (vector 0 0 0)
-      (vector 64 64 64) 2)
-     (vector 32 32 32) 20 4)
-    (vector 32 15 32) 20 5)
-   (vector 0 32 0) 
-   (vector 64 64 64)))
-
-(define (octree-tree pos size octree)
-  (octree-fill-sphere
-   (octree-box
-    octree
-    (vadd pos (vector 0 0 0))
-    (vadd pos (vector 1 4 1)) 0)
-   (vadd pos (vector 0 (+ 3 size) 0))
-   size 1))
+(blockview-setup-scene)
 
 (define octree
-  (octree-compresss
-    (octree-land (make-empty-octree))))
-
-#;(define octree
-  (octree-compresss
-   (octree-box
-    (make-empty-octree)
-    (vector 0 0 0)
-    (vector 64 30 64) 2)))
+  (octree-calc-viz
+   (octree-multi-compress
+    (octree-forest 10 0
+                   (blob-land 22 2 
+                              (make-empty-octree)    
+                              )))))
   
 (define (add-bot bots id pos bricks)
   (bots-add-bot 
@@ -244,4 +170,3 @@
 
 (display (length (loop-explode (pyramid 8))))(newline)
 
-;(start-framedump "frames/comp-" "jpg")

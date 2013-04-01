@@ -3,23 +3,31 @@
 (define octree-size 64)
 (define octree-depth 6)
 
+(define (octree-leaf viz v) (list viz v))
+(define (octree-leaf-viz l) (list-ref l 0))
+(define (octree-leaf-value l) (list-ref l 1))
+(define (octree-leaf-empty? l) (eq? (octree-leaf-value l) 'e))
+(define (octree-empty) (octree-leaf #f 'e))
 (define (make-octree v) (vector v v v v v v v v))
-(define (make-empty-octree) (make-octree 'e))
+(define (make-empty-octree) (make-octree (octree-empty)))
 (define (octree-replace o i v) (vector-set! o i v) o)
 (define octree-branch vector-ref)
-(define (octree-leaf? o i) (not (vector? (vector-ref o i))))
-(define (octree-empty? o) (equal? o (vector 'e 'e 'e 'e 'e 'e 'e 'e)))
+(define (octree-leaf? o) (not (vector? o)))
+(define (octree-branch-leaf? o i) (octree-leaf? (vector-ref o i)))
+(define (octree-empty? o) (equal? o (vector (octree-empty) (octree-empty) (octree-empty) (octree-empty)
+                                            (octree-empty) (octree-empty) (octree-empty) (octree-empty))))
+
 (define (octree-contig? o) 
   (let ((v (octree-branch o 0)))
     (and
-     (eq? (octree-branch o 1) v)
-     (eq? (octree-branch o 2) v)
-     (eq? (octree-branch o 3) v)
-     (eq? (octree-branch o 4) v)
-     (eq? (octree-branch o 5) v)
-     (eq? (octree-branch o 6) v)
-     (eq? (octree-branch o 7) v))))
-
+     (equal? (octree-branch o 1) v)
+     (equal? (octree-branch o 2) v)
+     (equal? (octree-branch o 3) v)
+     (equal? (octree-branch o 4) v)
+     (equal? (octree-branch o 5) v)
+     (equal? (octree-branch o 6) v)
+     (equal? (octree-branch o 7) v))))
+  
 (define (octree-path pos)
   (define (_ x y z depth)
     (cond 
@@ -41,7 +49,7 @@
 (define (octree-ref o pos)
   (define (_ o path)
     (cond
-      ((octree-leaf? o (car path)) 
+      ((octree-branch-leaf? o (car path)) 
        (octree-branch o (car path)))
       (else
        (_ (octree-branch o (car path)) (cdr path)))))
@@ -56,7 +64,7 @@
         (eq? depth octree-depth))
        v)
       ;; reached a collapsed tree?
-      ((octree-leaf? o (car path))
+      ((octree-branch-leaf? o (car path))
        (let ((value (octree-branch o (car path))))
          (octree-replace
           o (car path)
@@ -71,13 +79,13 @@
   (_ o (octree-path pos) v 0))
        
 (define (octree-delete o pos)
-  (octree-set o pos 'e))
+  (octree-set o pos (octree-leaf #f 'e)))
 
 ;; collapse chunks into single values, empty space or solid objects
 (define (octree-compress o)
   (define (_ o)
     (cond
-      ((not (vector? o)) o) ;; it's a leaf
+      ((octree-leaf? o) o) ;; it's a leaf
       (else
        (let ((r (vector
                  (_ (octree-branch o 0))
@@ -88,36 +96,23 @@
                  (_ (octree-branch o 5))
                  (_ (octree-branch o 6))
                  (_ (octree-branch o 7)))))
+         ;; if all branches are leaves which the same, collapse them to one value
          (if (octree-contig? r) (octree-branch o 0) r)))))
   (_ o))
 
 (define (print-tab s)
   (for-each (lambda (_) (display "-")) (build-list s (lambda (_) 0))))
 
-(define (octree-print o)
-  (define (_ o depth)
-    (cond
-      ((eq? o 'e) 0)
-      ((not (vector? o)) (print-tab depth)(display o)(newline))
-      (else
-       (print-tab depth)(newline)
-       (_ (octree-branch o 0) (+ depth 1))
-       (_ (octree-branch o 1) (+ depth 1))
-       (_ (octree-branch o 2) (+ depth 1))
-       (_ (octree-branch o 3) (+ depth 1))
-       (_ (octree-branch o 4) (+ depth 1))
-       (_ (octree-branch o 5) (+ depth 1))
-       (_ (octree-branch o 6) (+ depth 1))
-       (_ (octree-branch o 7) (+ depth 1)))))
-  (_ o 0))
-
-(define (octree-render f o)
+(define (octree-foldl f v o)
   (define (_ o x y z depth)
     (let ((s (/ octree-size (expt 2 depth) 2)))
       (cond
-        ((eq? o 'e) 0)
-        ((not (vector? o)) (f (vector x y z) (* s 2) o))
-        (else
+       ((octree-leaf? o) 
+        (if (not (octree-leaf-empty? o))
+            (f o (vector x y z) (* s 2) depth v)
+            v))
+       (else
+        (vector
          (_ (octree-branch o 0) x y z (+ depth 1))
          (_ (octree-branch o 1) (+ x s) y z (+ depth 1))
          (_ (octree-branch o 2) x (+ y s) z (+ depth 1))
@@ -125,9 +120,68 @@
          (_ (octree-branch o 4) x y (+ z s) (+ depth 1))
          (_ (octree-branch o 5) (+ x s) y (+ z s) (+ depth 1))
          (_ (octree-branch o 6) x (+ y s) (+ z s) (+ depth 1))
-         (_ (octree-branch o 7) (+ x s) (+ y s) (+ z s) (+ depth 1))))))
-    (_ o 0 0 0 0))
+         (_ (octree-branch o 7) (+ x s) (+ y s) (+ z s) (+ depth 1)))))))
+  (_ o 0 0 0 0))
 
+(define (octree-map f o)
+  (define (_ o x y z depth)
+    (let ((s (/ octree-size (expt 2 depth) 2)))
+      (cond
+       ((octree-leaf? o) 
+        (if (not (octree-leaf-empty? o))
+            (f o (vector x y z) (* s 2) depth)
+            o))
+       (else
+        (vector
+         (_ (octree-branch o 0) x y z (+ depth 1))
+         (_ (octree-branch o 1) (+ x s) y z (+ depth 1))
+         (_ (octree-branch o 2) x (+ y s) z (+ depth 1))
+         (_ (octree-branch o 3) (+ x s) (+ y s) z (+ depth 1))
+         (_ (octree-branch o 4) x y (+ z s) (+ depth 1))
+         (_ (octree-branch o 5) (+ x s) y (+ z s) (+ depth 1))
+         (_ (octree-branch o 6) x (+ y s) (+ z s) (+ depth 1))
+         (_ (octree-branch o 7) (+ x s) (+ y s) (+ z s) (+ depth 1)))))))
+  (_ o 0 0 0 0))
+
+(define octree-for-each octree-map)
+
+(define (octree-check-side f o pos size)
+  (define (_ x y)
+    (cond
+     ((eq? x -1) #f)
+     ((octree-leaf-empty? (octree-ref o (vadd pos (f x y)))) #t)
+     (else (_ (- x 1) y))))
+  (define (__ y)
+    (cond
+     ((eq? y -1) #f)
+     ((_ size y) #t)
+     (else (__ (- y 1)))))
+  (__ size))
+
+(define (octree-is-visible? o pos size)
+  (or
+   (octree-check-side (lambda (x y) (vector size x y)) o pos size)
+   (octree-check-side (lambda (x y) (vector -1 x y)) o pos size)
+   (octree-check-side (lambda (x y) (vector x size y)) o pos size)
+   (octree-check-side (lambda (x y) (vector x -1 y)) o pos size)
+   (octree-check-side (lambda (x y) (vector x y size)) o pos size)
+   (octree-check-side (lambda (x y) (vector x y -1)) o pos size)))
+
+(define (octree-calc-viz o)
+  (octree-map
+   (lambda (v pos size depth)
+     (octree-leaf
+      (octree-is-visible?
+       o pos size)
+      (octree-leaf-value v)))
+     o))
+
+
+(define (octree-print o)
+  (octree-for-each 
+   (lambda (o pos size depth)
+     (print-tab depth)(display o)(newline))))
+       
 (define (index->coords i)
   (vector
    (modulo i octree-size)
@@ -173,7 +227,7 @@
    o
    (lambda (o pos)
      (if (inside? pos min max)
-         (octree-set o pos v)
+         (octree-set o pos (octree-leaf #t v))
          o))))
 
 (define (octree-delete-box o min max)
@@ -189,7 +243,7 @@
    o
    (lambda (o ipos)
      (if (< (vdist ipos pos) size)
-         (octree-set o ipos v)
+         (octree-set o ipos (octree-leaf #t v))
          o))))
 
 (define (octree-delete-sphere o pos size)
@@ -199,6 +253,68 @@
      (if (< (vdist ipos pos) size)
          (octree-delete o ipos)
          o))))
+
+(define (octree-multi-compress octree)
+  (octree-compress
+   (octree-compress
+    (octree-compress
+     (octree-compress
+      (octree-compress
+       (octree-compress octree)))))))
+        
+(define (octree-land octree)
+  (octree-fill-sphere
+   (octree-delete-box
+    (octree-fill-sphere
+     (octree-box 
+      (make-empty-octree)
+      (vector 0 0 0)
+      (vector 64 64 64) 2)
+     (vector 32 32 32) 20 4)
+    (vector 0 32 0) 
+    (vector 64 64 64))
+   (vector 32 15 32) 20 5))
+
+(define (rr a b) (+ a (random (- b a))))
+
+(define (octree-tree pos size base octree)
+  (let ((width (/ size 3)))
+    (octree-fill-sphere
+     (octree-box
+      octree
+      (vadd pos (vector (+ (- width) 1) (- base (vy pos)) (+ (- width) 1)))
+      (vadd pos (vector width 4 width)) 0)
+     (vadd pos (vector 0 (+ 3 size) 0))
+     size 1)))
+
+(define (octree-forest c b o)
+  (foldl
+   (lambda (i r)
+     (octree-tree 
+      (vector (rr 0 64) (rr 25 38) (rr 0 64)) 
+      (rr 3 8) b o))
+   o
+   (build-list c (lambda (c) c))))
+
+(define (blob-land size v o)
+  (define (_x x y)
+    (cond 
+     ((zero? x) o)
+     (else
+      (octree-fill-sphere
+       (_x (- x 1) y)
+       (vector (+ (* x 10) (rr -15 15))
+               1
+               (+ (* y 10) (rr -15 15)))
+       (+ size (random 6))
+       v))))
+  (define (_y o x y)
+    (cond 
+     ((zero? y) o)
+     (else
+      (_y (_x x y) x (- y 1)))))
+  (_y o 8 8))
+
 
 (define (test)
   (define o (make-empty-octree))

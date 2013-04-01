@@ -5,7 +5,7 @@
 (load "input.scm")
 (load "scheme-bricks.scm")
 
-(define bot-cycle-time 2.3)
+(define bot-cycle-time 0.3)
 
 ;; ----------------------------------------------------
 ;; thinking machines
@@ -32,8 +32,8 @@
 
 (define (bot-run-code bot octree input bricks)
   ;; check gravity first
-  (let ((here (octree-ref octree (bot-pos bot)))
-        (under (octree-ref octree (vadd (vector 0 -1 0) (bot-pos bot)))))
+  (let ((here (octree-leaf-value (octree-ref octree (bot-pos bot))))
+        (under (octree-leaf-value (octree-ref octree (vadd (vector 0 -1 0) (bot-pos bot))))))
     (if (not (eq? here 'e)) ;; 'in' a filled block, go up
         (bot-modify-pos bot (vadd (vector 0 1 0) (bot-pos bot)))
         (if (eq? under 'e) ;; nothing underneath, go down
@@ -86,9 +86,9 @@
     (if (and
          (>= (vx pos) 0) (< (vx pos) octree-size)
          (>= (vz pos) 0) (< (vz pos) octree-size)
-         (or (eq? (octree-ref octree pos) 'e)
-             (eq? (octree-ref octree (vadd (vector 0 1 0)
-                                           (bot-in-front bot))) 'e)))
+         (or (eq? (octree-leaf-value (octree-ref octree pos)) 'e)
+             (eq? (octree-leaf-value (octree-ref octree (vadd (vector 0 1 0)
+                                                         (bot-in-front bot)))) 'e)))
         (bot-modify-pos bot pos)
         bot)))
 
@@ -105,7 +105,7 @@
   (if (not (bot-carrying bot))
       (bot-modify-carrying 
        (bot-modify-action bot 'pickup)
-       (octree-ref octree (bot-underneath bot))) 
+       (octree-leaf-value (octree-ref octree (bot-underneath bot)))) 
       bot))
 
 (define (bot-drop bot octree)
@@ -137,9 +137,9 @@
    ((eq? (bot-action bot) 'pickup)
     (octree-delete octree (bot-underneath bot)))
    ((eq? (bot-action bot) 'drop)
-    (octree-set octree (vadd (bot-pos bot) (vector 0 -1 0)) (bot-carrying bot)))
+    (octree-set octree (vadd (bot-pos bot) (vector 0 -1 0)) (octree-leaf #t (bot-carrying bot))))
    ((eq? (bot-action bot) 'drop-in-front)
-    (octree-set octree (bot-in-front bot) (bot-carrying bot)))
+    (octree-set octree (bot-in-front bot) (octree-leaf #t (bot-carrying bot))))
    (else octree)))
   
 ;;-------------------------------------------------------------
