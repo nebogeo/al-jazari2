@@ -3,7 +3,7 @@ Al Jazari 2
 
 A minecraft inspired robot livecoding system for fluxus.
 
-![Picture](https://github.com/nebogeo/raw/master/aj.png)
+![Picture](https://raw.github.com/nebogeo/al-jazari2/master/aj.png)
 
 Requires fluxus, start with 'fluxus al-jazari2.scm' from the project directory.
 
