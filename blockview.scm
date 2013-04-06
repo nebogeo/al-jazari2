@@ -33,10 +33,10 @@
   (set! built (+ built 1))
   (with-state
    (hint-frustum-cull)
-   (hint-vertcols)
+   ;(hint-vertcols)
     (wire-colour 1)
    (texture-params 0 '(min linear-mipmap-linear mag nearest))
-   (texture (load-texture (string-append "textures/" (number->string value) ".png")))
+;   (texture (load-texture (string-append "textures/" (number->string value) ".png")))
 ;   (texture (load-texture "textures/outline.png"))
    (colour (cond 
             ((eq? size 1) (vector 0 0 1))
@@ -53,7 +53,7 @@
       p
       (pdata-map! (lambda (c) (vector 0.5 0.5 0.5)) "c")
       (pdata-map! (lambda (t) (vmul t size)) "t")
-      (let ((b (+ size 0)) (a 0))
+      #;(let ((b (+ size 0)) (a 0))
         (pdata-list-set! "c" '(10 14 21) (calc-occlusion o (vadd pos (vector b b b))))
         (pdata-list-set! "c" '(3 7 19) (calc-occlusion o (vadd pos (vector a a a))))
         (pdata-list-set! "c" '(2 4 23) (calc-occlusion o (vadd pos (vector b a a))))

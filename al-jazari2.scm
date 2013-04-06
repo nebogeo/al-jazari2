@@ -8,6 +8,8 @@
 
 (blockview-setup-scene)
 
+(random-seed 23)
+
 (define octree
   (octree-calc-viz
    (octree-multi-compress
@@ -25,13 +27,14 @@
     ;; assume code was last added, at end of list
     (brick-id (car (reverse (bricks-roots bricks)))))))
 
+(hint-unlit)
 (define block-view (make-block-view octree))
 (define bots (make-bots '()))
 (define bot-views (make-bot-views '()))
 (define input (make-input))
 (define canvas (build-locator))
 (define bricks (make-bricks canvas))
-(setup-scene)
+;;(setup-scene)
 (define pointer (with-state 
                  (parent canvas) 
                  (scale 0.1)
@@ -39,7 +42,7 @@
                  (build-cube)))
 
 (set! bricks (bricks-add-code bricks controlled-bot))
-(set! bots (add-bot bots 0 (vector 27 36 26) bricks))
+(set! bots (add-bot bots 0 (vector 27 36 42) bricks))
 (set! bot-views (bot-views-update bot-views bots bricks))
 
 #;((set! bricks (bricks-add-code bricks default-bot))
@@ -104,7 +107,7 @@
 
 (define size 8)
 
-(set! bricks (bricks-add-code bricks   
+#;(set! bricks (bricks-add-code bricks   
                               '(lambda (bot octree)
                                  (bot-sequence 
                                   bot
@@ -120,8 +123,8 @@
                                         ;  (pyramid 8)
                                   ))))
 
-(set! bots (add-bot bots 3 (vector 19 36 26) bricks))
-(set! bot-views (bot-views-update bot-views bots bricks))
+#;(set! bots (add-bot bots 3 (vector 19 36 26) bricks))
+#;(set! bot-views (bot-views-update bot-views bots bricks))
 
 (define cam-id 0)
 (define camera (bot-view-prim (list-ref-safe bot-views cam-id)))

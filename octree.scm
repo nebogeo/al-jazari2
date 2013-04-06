@@ -145,27 +145,27 @@
 
 (define octree-for-each octree-map)
 
-(define (octree-check-side f o pos size)
-  (define (_ x y)
+(define (octree-check-edge f o pos size)
+  (define (do-x x y)
     (cond
      ((eq? x -1) #f)
      ((octree-leaf-empty? (octree-ref o (vadd pos (f x y)))) #t)
-     (else (_ (- x 1) y))))
-  (define (__ y)
+     (else (do-x (- x 1) y))))
+  (define (do-y y)
     (cond
      ((eq? y -1) #f)
-     ((_ size y) #t)
-     (else (__ (- y 1)))))
-  (__ size))
+     ((do-x size y) #t)
+     (else (do-y (- y 1)))))
+  (do-y size))
 
 (define (octree-is-visible? o pos size)
   (or
-   (octree-check-side (lambda (x y) (vector size x y)) o pos size)
-   (octree-check-side (lambda (x y) (vector -1 x y)) o pos size)
-   (octree-check-side (lambda (x y) (vector x size y)) o pos size)
-   (octree-check-side (lambda (x y) (vector x -1 y)) o pos size)
-   (octree-check-side (lambda (x y) (vector x y size)) o pos size)
-   (octree-check-side (lambda (x y) (vector x y -1)) o pos size)))
+   (octree-check-edge (lambda (x y) (vector size x y)) o pos size)
+   (octree-check-edge (lambda (x y) (vector -1 x y)) o pos size)
+   (octree-check-edge (lambda (x y) (vector x size y)) o pos size)
+   (octree-check-edge (lambda (x y) (vector x -1 y)) o pos size)
+   (octree-check-edge (lambda (x y) (vector x y size)) o pos size)
+   (octree-check-edge (lambda (x y) (vector x y -1)) o pos size)))
 
 (define (octree-calc-viz o)
   (octree-map
